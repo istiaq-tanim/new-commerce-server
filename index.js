@@ -23,7 +23,7 @@ async function run() {
             const result = await productCollection.insertOne(product)
             res.send(result)
       })
-
+      //filter 
       app.get("/products", async (req, res) => {
             const query = req.query
             const filter = {}
