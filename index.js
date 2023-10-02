@@ -5,7 +5,7 @@ const port = process.env.PORT || 5000;
 
 app.use(cors())
 app.use(express.json())
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId, LEGAL_TCP_SOCKET_OPTIONS } = require('mongodb');
 const uri = "mongodb+srv://new-Commerce:LPrtQq4xyj5I6k6X@cluster0.kjebueb.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri, {
       serverApi: {
@@ -39,6 +39,16 @@ async function run() {
             }
             const result = await productCollection.find(filter).toArray()
             res.send(result)
+
+      })
+
+      app.get("/paginateProducts", async (req, res) => {
+            const query = req.query
+            const { page , limit } = query
+            const skip = (Number(page) - 1) * Number(limit)
+            const allProducts = await productCollection.countDocuments({})
+            const products = await productCollection.find({}).limit(Number(limit)).skip(skip).toArray()
+            res.send({ data: products, currentPage: Number(page), totalPage: Math.ceil(allProducts / Number(limit)) })
       })
 
       //cart api
