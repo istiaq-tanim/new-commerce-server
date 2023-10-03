@@ -25,31 +25,57 @@ async function run() {
       })
       //filter 
 
+      // app.get("/products", async (req, res) => {
+      //       const query = req.query;
+      //       const search = query.search || "";
+      //       const category = query.category || "";
+      //       const limit = parseInt(query.limit) || 3;
+      //       const page = parseInt(query.page) || 1;
+      //       let skip = (page - 1) * limit;
+      //       const filter = {}
+      //       if (search && category) {
+      //             filter.name = { $regex: search, $options: "i" }
+      //             filter.category = category
+      //       }
+      //       else if (query.search) {
+      //             filter.name = { $regex: search, $options: "i" }
+      //       }
+      //       else if (query.category) {
+      //             filter.category = category
+      //       }
+      //       const totalProduct=await productCollection.find(filter).toArray()
+      //       const productsCount=totalProduct.length
+      //       const pageCount = Math.ceil(productsCount / limit);
+      //       if(page > pageCount) skip=0
+      //       const products = await productCollection.find(filter).skip(skip).limit(limit).toArray()
+      //       res.send({ products, productsCount, page, limit, pageCount });
+      // });
+
       app.get("/products", async (req, res) => {
-            const query = req.query;
-            const search = query.search || "";
-            const category = query.category || "";
-            const limit = parseInt(query.limit) || 3;
-            const page = parseInt(query.page) || 1;
+            const search = req.query.search || "";
+            const category = req.query.category || ""; 
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 3;
             let skip = (page - 1) * limit;
-            const filter = {}
+            let filter = {}
             if (search && category) {
-                  filter.name = { $regex: search, $options: "i" }
-                  filter.category = category
+                  filter = {
+                        $and: [
+                              { name: { $regex: search, $options: "i" } },
+                              { category: { $regex: category, $options: "i" } }
+                        ]
+                  }
             }
-            else if (query.search) {
-                  filter.name = { $regex: search, $options: "i" }
-            }
-            else if (query.category) {
-                  filter.category = category
-            }
-            const totalProduct=await productCollection.find(filter).toArray()
-            const productsCount=totalProduct.length
-            const pageCount = Math.ceil(productsCount / limit);
+            else if (search) filter = { name: { $regex: search, $options: "i" } }
+            else if (category) filter = { category: { $regex: category, $options: "i" } }
+            const totalProduct = await productCollection.countDocuments(filter);
+            const pageCount=Math.ceil(totalProduct/limit)
             if(page > pageCount) skip=0
-            const products = await productCollection.find(filter).skip(skip).limit(limit).toArray()
-            res.send({ products, productsCount, page, limit, pageCount });
+            const products = await productCollection.find(filter).skip(skip).limit(limit).toArray();
+            res.send({ products, totalProduct , pageCount ,page,limit});
       });
+
+
       //cart api
       app.post("/addCart", async (req, res) => {
             const cartItem = req.body;
