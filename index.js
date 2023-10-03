@@ -24,35 +24,33 @@ async function run() {
             res.send(result)
       })
       //filter 
+
       app.get("/products", async (req, res) => {
-            const query = req.query
+            const query = req.query;
+            const search = query.search || "";
+            const category = query.category || "";
+            const limit = parseInt(query.limit) || 3;
+            const page = parseInt(query.page) || 1;
+            let skip = (page - 1) * limit;
             const filter = {}
-            if (query.search && query.category) {
-                  filter.name = { $regex: req.query.search, $options: "i" }
-                  filter.category = query.category
+            if (search && category) {
+                  filter.name = { $regex: search, $options: "i" }
+                  filter.category = category
             }
             else if (query.search) {
-                  filter.name = { $regex: req.query.search, $options: "i" }
+                  filter.name = { $regex: search, $options: "i" }
             }
             else if (query.category) {
-                  filter.category = query.category
+                  filter.category = category
             }
-            const result = await productCollection.find(filter).toArray()
-            res.send(result)
-
-      })
-
-      app.get("/paginateProducts", async (req, res) => {
-            const query = req.query
-            const { page , limit } = query
-            const skip = (Number(page) - 1) * Number(limit)
-            const allProducts = await productCollection.countDocuments({})
-            const products = await productCollection.find({}).limit(Number(limit)).skip(skip).toArray()
-            res.send({ data: products, currentPage: Number(page), totalPage: Math.ceil(allProducts / Number(limit)) })
-      })
-
+            const totalProduct=await productCollection.find(filter).toArray()
+            const productsCount=totalProduct.length
+            const pageCount = Math.ceil(productsCount / limit);
+            if(page > pageCount) skip=0
+            const products = await productCollection.find(filter).skip(skip).limit(limit).toArray()
+            res.send({ products, productsCount, page, limit, pageCount });
+      });
       //cart api
-
       app.post("/addCart", async (req, res) => {
             const cartItem = req.body;
             const filter = { productId: cartItem.productId }
